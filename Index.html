@@ -1,1 +1,186 @@
-este es el index! luego se cambiará
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Juego de anotación de colectivos!</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .bus-card {
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+            transition: all 0.2s ease-in-out;
+        }
+        .bus-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.15);
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen pb-12 font-sans antialiased">
+
+    <!-- Encabezado -->
+    <header class="bg-slate-800 border-b border-slate-700 sticky top-0 z-30 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="bg-indigo-600 p-2.5 rounded-xl text-white shadow-md">
+                    <i class="fa-solid fa-bus text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-black tracking-wide text-white">Juego de anotación de colectivos!</h1>
+                    <p class="text-xs text-slate-400">Marca las líneas que viste pasar o en las que viajaste</p>
+                </div>
+            </div>
+
+            <!-- Botones de Modo -->
+            <div class="flex items-center gap-2 bg-slate-950/60 p-1.5 rounded-xl border border-slate-800">
+                <button id="btnModeRidden" onclick="setMode('ridden')" 
+                    class="flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm transition-all duration-200 bg-emerald-600 text-white shadow-lg shadow-emerald-900/30">
+                    <i class="fa-solid fa-circle-check text-base"></i>
+                    <span>Tomado (Tilde)</span>
+                </button>
+                <button id="btnModeSpotted" onclick="setMode('spotted')" 
+                    class="flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm transition-all duration-200 bg-slate-800 text-slate-400 hover:text-slate-200">
+                    <i class="fa-solid fa-circle-xmark text-base"></i>
+                    <span>Visto sin viajar (Cruz)</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+        <!-- Panel de Estadísticas y Filtros -->
+        <div class="bg-slate-800/80 rounded-2xl p-4 border border-slate-700/80 shadow-md flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex flex-wrap items-center gap-3 text-sm">
+                <span class="px-3 py-1 rounded-lg bg-emerald-950/60 text-emerald-400 border border-emerald-800/50 font-medium">
+                    <i class="fa-solid fa-check text-xs mr-1"></i> Viajados: <strong id="countRidden">0</strong>
+                </span>
+                <span class="px-3 py-1 rounded-lg bg-rose-950/60 text-rose-400 border border-rose-800/50 font-medium">
+                    <i class="fa-solid fa-xmark text-xs mr-1"></i> Solo Vistos: <strong id="countSpotted">0</strong>
+                </span>
+                <span class="px-3 py-1 rounded-lg bg-slate-700/60 text-slate-300 font-medium">
+                    Totales: <strong id="countTotal">0</strong>
+                </span>
+            </div>
+
+            <!-- Buscador y Filtro -->
+            <div class="flex items-center gap-3 w-full md:w-auto">
+                <div class="relative flex-1 md:w-64">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                    <input type="text" id="searchInput" oninput="renderBuses()" placeholder="Buscar línea..." 
+                        class="w-full bg-slate-900 border border-slate-700 rounded-xl pl-9 pr-3 py-1.5 text-sm text-white focus:outline-none focus:border-indigo-500">
+                </div>
+                <select id="filterSelect" onchange="renderBuses()" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-sm text-white focus:outline-none focus:border-indigo-500">
+                    <option value="all">Todos</option>
+                    <option value="ridden">Solo Tomados</option>
+                    <option value="spotted">Solo Vistos</option>
+                    <option value="none">Sin Marcar</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Parrilla de Colectivos -->
+        <div id="busGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3">
+            <!-- Se llena mediante JavaScript -->
+        </div>
+
+    </main>
+
+    <script>
+        // Listado completo de colectivos mapeado directamente de las imágenes subidas
+        const busData = [
+            // Imagen 1
+            { number: "1", bg: "bg-[#FFF9A6]", text: "text-black", cap: "bg-[#1E2942]" },
+            { number: "2", bg: "bg-[#800000]", text: "text-white", cap: "bg-[#111111]" },
+            { number: "4", bg: "bg-[#0B0B80]", text: "text-white", cap: "bg-red-600" },
+            { number: "7", bg: "bg-white", text: "text-black", cap: "bg-blue-600" },
+            { number: "8", bg: "bg-white", text: "text-black", cap: "bg-blue-600" },
+            { number: "9", bg: "bg-white", text: "text-black", cap: "bg-blue-600" },
+            { number: "10", bg: "bg-[#00B092]", text: "text-black", cap: "bg-black" },
+            { number: "12", bg: "bg-[#9E9E9E]", text: "text-black", cap: "bg-red-600" },
+            { number: "15", bg: "bg-[#008000]", text: "text-white", cap: "bg-[#00C000]" },
+            // Imagen 2
+            { number: "17", bg: "bg-[#00B092]", text: "text-black", cap: "bg-black" },
+            { number: "19", bg: "bg-white", text: "text-black", cap: "bg-red-600" },
+            { number: "20", bg: "bg-white", text: "text-black", cap: "bg-red-600" },
+            { number: "21", bg: "bg-white", text: "text-black", cap: "bg-blue-600" },
+            { number: "22", bg: "bg-white", text: "text-black", cap: "bg-[#00B092]" },
+            { number: "24", bg: "bg-[#008000]", text: "text-white", cap: "bg-red-600" },
+            { number: "25", bg: "bg-white", text: "text-black", cap: "bg-blue-600" },
+            { number: "26", bg: "bg-white", text: "text-black", cap: "bg-[#1E2942]" },
+            { number: "28", bg: "bg-white", text: "text-black", cap: "bg-[#008000]" },
+            // Imagen 3
+            { number: "29", bg: "bg-[#1E2942]", text: "text-white", cap: "bg-red-600" },
+            { number: "31", bg: "bg-white", text: "text-black", cap: "bg-blue-600" },
+            { number: "32", bg: "bg-red-600", text: "text-white", cap: "bg-blue-600" },
+            { number: "33", bg: "bg-[#008000]", text: "text-white", cap: "bg-white" },
+            { number: "34", bg: "bg-[#0B0B80]", text: "text-white", cap: "bg-red-600" },
+            { number: "37", bg: "bg-[#008000]", text: "text-white", cap: "bg-black" },
+            { number: "39", bg: "bg-[#C48800]", text: "text-white", cap: "bg-white" },
+            { number: "41", bg: "bg-yellow-300", text: "text-black", cap: "bg-yellow-300" },
+            { number: "42", bg: "bg-[#E5D2A0]", text: "text-black", cap: "bg-red-600" },
+            { number: "44", bg: "bg-blue-600", text: "text-white", cap: "bg-[#1E2942]" },
+            { number: "45", bg: "bg-[#008000]", text: "text-white", cap: "bg-red-600" },
+            { number: "46", bg: "bg-[#0080C0]", text: "text-white", cap: "bg-white" },
+            // Imagen 4
+            { number: "47", bg: "bg-red-600", text: "text-white", cap: "bg-black" },
+            { number: "49", bg: "bg-white", text: "text-black", cap: "bg-[#0B0B80]" },
+            { number: "50", bg: "bg-blue-600", text: "text-white", cap: "bg-[#1E2942]" },
+            { number: "51", bg: "bg-white", text: "text-black", cap: "bg-blue-600" },
+            { number: "53", bg: "bg-blue-600", text: "text-white", cap: "bg-[#008000]" },
+            { number: "55", bg: "bg-red-600", text: "text-white", cap: "bg-black" },
+            { number: "56", bg: "bg-white", text: "text-black", cap: "bg-[#008000]" },
+            { number: "57", bg: "bg-white", text: "text-black", cap: "bg-red-600" },
+            // Imagen 5
+            { number: "59", bg: "bg-[#008000]", text: "text-white", cap: "bg-red-600" },
+            { number: "60", bg: "bg-white", text: "text-black", cap: "bg-red-600" },
+            { number: "61", bg: "bg-white", text: "text-black", cap: "bg-[#00E000]" },
+            { number: "62", bg: "bg-white", text: "text-black", cap: "bg-[#00E000]" },
+            { number: "63", bg: "bg-blue-600", text: "text-white", cap: "bg-black" },
+            { number: "64", bg: "bg-[#1E2942]", text: "text-white", cap: "bg-[#E5D2A0]" },
+            { number: "65", bg: "bg-white", text: "text-black", cap: "bg-[#1E2942]" },
+            { number: "67", bg: "bg-red-600", text: "text-white", cap: "bg-yellow-300" },
+            { number: "68", bg: "bg-white", text: "text-black", cap: "bg-blue-600" },
+            { number: "70", bg: "bg-[#008000]", text: "text-white", cap: "bg-blue-600" },
+            { number: "71", bg: "bg-white", text: "text-black", cap: "bg-red-600" },
+            { number: "74", bg: "bg-white", text: "text-black", cap: "bg-blue-600" },
+            // Imagen 6
+            { number: "76", bg: "bg-blue-600", text: "text-white", cap: "bg-[#1E2942]" },
+            { number: "78", bg: "bg-[#005000]", text: "text-white", cap: "bg-[#E5D2A0]" },
+            { number: "79", bg: "bg-white", text: "text-black", cap: "bg-blue-600" },
+            { number: "80", bg: "bg-red-600", text: "text-white", cap: "bg-black" },
+            { number: "84", bg: "bg-white", text: "text-black", cap: "bg-blue-600" },
+            { number: "85", bg: "bg-[#005000]", text: "text-white", cap: "bg-yellow-400" },
+            { number: "86", bg: "bg-white", text: "text-black", cap: "bg-red-600" },
+            { number: "87", bg: "bg-[#005000]", text: "text-white", cap: "bg-[#E5D2A0]" },
+            { number: "88", bg: "bg-white", text: "text-black", cap: "bg-red-600" },
+            { number: "91", bg: "bg-white", text: "text-black", cap: "bg-[#008000]" },
+            { number: "92", bg: "bg-[#00C090]", text: "text-white", cap: "bg-white" },
+            // Imagen 7
+            { number: "93", bg: "bg-[#008000]", text: "text-white", cap: "bg-white" },
+            { number: "95", bg: "bg-[#008000]", text: "text-white", cap: "bg-red-600" },
+            { number: "96", bg: "bg-white", text: "text-black", cap: "bg-red-600" },
+            { number: "97", bg: "bg-white", text: "text-black", cap: "bg-red-600" },
+            { number: "98", bg: "bg-[#005000]", text: "text-white", cap: "bg-yellow-400" },
+            { number: "100", bg: "bg-white", text: "text-black", cap: "bg-red-600" },
+            { number: "101", bg: "bg-white", text: "text-black", cap: "bg-[#008000]" },
+            { number: "102", bg: "bg-red-600", text: "text-white", cap: "bg-[#1E2942]" },
+            // Imagen 8
+            { number: "103", bg: "bg-red-600", text: "text-white", cap: "bg-[#E5D2A0]" },
+            { number: "105", bg: "bg-[#1E2942]", text: "text-white", cap: "bg-red-600" },
+            { number: "106", bg: "bg-white", text: "text-black", cap: "bg-[#008000]" },
+            { number: "107", bg: "bg-blue-600", text: "text-white", cap: "bg-[#1E2942]" },
+            { number: "108", bg: "bg-blue-600", text: "text-white", cap: "bg-[#1E2942]" },
+            { number: "109", bg: "bg-white", text: "text-black", cap: "bg-[#1E2942]" },
+            { number: "110", bg: "bg-red-600", text: "text-white", cap: "bg-blue-600" },
+            // Imagen 9
+            { number: "111", bg: "bg-[#005000]", text: "text-white", cap: "bg-[#E5D2A0]" },
+            { number: "113", bg: "bg-blue-600", text: "text-white", cap: "bg-black" },
+            { number: "114", bg: "bg-white", text: "text-black", cap: "bg-[#00E000]" },
+            { number: "115", bg: "bg-blue-600", text: "text-white", cap: "bg-[#1E2942]" },
+            { number: "117", bg: "bg-white", text: "text-black", cap: "bg-red-600" },
+            { number: "118", bg: "bg-[#1E2942]", text: "text-white", cap: "bg-red-600" },
+            { number: "119", bg: "bg-white", text: "text-black", cap: "bg-[#008000]" },
+            { number: "123", bg: "bg-blue-600", text: "text-white", cap: "bg-[#008000]" },
+            { number: "124", bg: "bg-[#0000B0]", text: "text
